@@ -1,0 +1,47 @@
+baseline:
+  batch_size: 1024
+  lr: 1e-3
+  maxlen: 200
+  hidden_units: 50
+  num_blocks: 2
+  num_epochs: 25
+  num_heads: 1
+  dropout_rate: 0.2
+  l2_emb: 0.0
+  device: cuda
+
+lora:
+  batch_size: 1024
+  lr: 1e-3
+  maxlen: 200
+  hidden_units: 50
+  num_blocks: 2
+  num_epochs: 25
+  num_heads: 1
+  dropout_rate: 0.2
+  l2_emb: 0.0
+  device: cuda
+
+moe:
+  batch_size: 1024
+  lr: 1e-3
+  maxlen: 200
+  hidden_units: 50
+  num_blocks: 2
+  num_epochs: 25
+  num_heads: 1
+  dropout_rate: 0.2
+  l2_emb: 0.0
+  device: cuda
+
+ensemble:
+  batch_size: 1024
+  lr: 1e-3
+  maxlen: 200
+  hidden_units: 50
+  num_blocks: 2
+  num_epochs: 25
+  num_heads: 1
+  dropout_rate: 0.2
+  l2_emb: 0.0
+  device: cuda

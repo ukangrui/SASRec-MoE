@@ -1,0 +1,32 @@
+device: 'cpu'
+hidden_units: 50
+num_blocks: 2
+num_heads: 1
+dropout_rate: 0.2
+maxlen: 200
+batch_size: 1024
+metrics:
+    - popularity
+    - temprature
+num_groups: 100
+skip_threshold: 1
+
+lora:
+  num_epochs: 1
+  lr: 1e-3
+  weight_decay: 1e-2
+
+  lora_rank : 1
+  lora_alpha: 64
+  target_modules:
+    - attention_layers.0
+    - attention_layers.1
+
+moe:
+  num_epochs: 3
+  lr: 1e-3
+  weight_decay: 1e-2
+
+ensemble:
+  alpha: 0.5
+  maxlen: 200
