@@ -1,7 +1,0 @@
-2024-08-11 00:09:22,225 - INFO - training lora on popularity
-2024-08-11 00:11:33,982 - INFO - base ndcg: 0.09540980262454848
-2024-08-11 00:11:33,982 - INFO - lora ndcg: 0.10190699419162408
-2024-08-11 00:11:33,988 - INFO - training lora on temprature
-2024-08-11 00:13:45,888 - INFO - base ndcg: 0.09541484437695885
-2024-08-11 00:13:45,888 - INFO - lora ndcg: 0.10918754216183849
-2024-08-11 00:13:45,895 - INFO - training MoE on popularity

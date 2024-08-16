@@ -1,27 +1,36 @@
 import numpy as np
 import torch
-import argparse
-import loratorch as lora
-from peft import LoraConfig, get_peft_model
-from peft.tuners.lora.layer import MultiheadAttention as PeftMha
+# import argparse
+# from peft import LoraConfig, get_peft_model
+# from peft.tuners.lora.layer import MultiheadAttention as PeftMha
 
 class PointWiseFeedForward(torch.nn.Module):
-    def __init__(self, hidden_units, dropout_rate):
+    def __init__(self, hidden_units, dropout_rate, use_conv):
 
         super(PointWiseFeedForward, self).__init__()
+        self.use_conv = use_conv
 
-        self.conv1 = torch.nn.Conv1d(hidden_units, hidden_units, kernel_size=1)
-        self.conv2 = torch.nn.Conv1d(hidden_units, hidden_units, kernel_size=1)
+        if self.use_conv:
+            self.conv1 = torch.nn.Conv1d(hidden_units, hidden_units, kernel_size=1)
+            self.conv2 = torch.nn.Conv1d(hidden_units, hidden_units, kernel_size=1)
+        else:
+            self.linear1 = torch.nn.Linear(hidden_units, hidden_units)
+            self.linear2 = torch.nn.Linear(hidden_units, hidden_units)
         
         self.dropout1 = torch.nn.Dropout(p=dropout_rate)
         self.relu = torch.nn.ReLU()
         self.dropout2 = torch.nn.Dropout(p=dropout_rate)
 
     def forward(self, inputs):
-        outputs = self.dropout2(self.conv2(self.relu(self.dropout1(self.conv1(inputs.transpose(-1, -2))))))
-        outputs = outputs.transpose(-1, -2) # as Conv1D requires (N, C, Length)
-        outputs += inputs
-        return outputs
+        if self.use_conv:
+            outputs = self.dropout2(self.conv2(self.relu(self.dropout1(self.conv1(inputs.transpose(-1, -2))))))
+            outputs = outputs.transpose(-1, -2) # as Conv1D requires (N, C, Length)
+            outputs += inputs
+            return outputs
+        else:
+            outputs = self.dropout2(self.linear2(self.relu(self.dropout1(self.linear1(inputs)))))
+            outputs += inputs
+            return outputs
 
 # pls use the following self-made multihead attention layer
 # in case your pytorch version is below 1.16 or for other reasons
@@ -60,7 +69,7 @@ class SASRec(torch.nn.Module):
             new_fwd_layernorm = torch.nn.LayerNorm(args.hidden_units, eps=1e-8)
             self.forward_layernorms.append(new_fwd_layernorm)
 
-            new_fwd_layer = PointWiseFeedForward(args.hidden_units, args.dropout_rate)
+            new_fwd_layer = PointWiseFeedForward(args.hidden_units, args.dropout_rate, args.use_conv)
             self.forward_layers.append(new_fwd_layer)
 
             # self.pos_sigmoid = torch.nn.Sigmoid()
@@ -122,31 +131,31 @@ class SASRec(torch.nn.Module):
         return logits # preds # (U, I)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', default='ml-1m',)
-    parser.add_argument('--train_dir', default='default',)
-    parser.add_argument('--batch_size', default=512, type=int)
-    parser.add_argument('--lr', default=5e-4, type=float)
-    parser.add_argument('--maxlen', default=200, type=int)
-    parser.add_argument('--hidden_units', default=50, type=int)
-    parser.add_argument('--num_blocks', default=2, type=int)
-    parser.add_argument('--num_epochs', default=20, type=int)
-    parser.add_argument('--num_heads', default=1, type=int)
-    parser.add_argument('--dropout_rate', default=0.2, type=float)
-    parser.add_argument('--l2_emb', default=0.0, type=float)
-    parser.add_argument('--device', default='cpu', type=str)
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('--dataset', default='ml-1m',)
+#     parser.add_argument('--train_dir', default='default',)
+#     parser.add_argument('--batch_size', default=512, type=int)
+#     parser.add_argument('--lr', default=5e-4, type=float)
+#     parser.add_argument('--maxlen', default=200, type=int)
+#     parser.add_argument('--hidden_units', default=50, type=int)
+#     parser.add_argument('--num_blocks', default=2, type=int)
+#     parser.add_argument('--num_epochs', default=20, type=int)
+#     parser.add_argument('--num_heads', default=1, type=int)
+#     parser.add_argument('--dropout_rate', default=0.2, type=float)
+#     parser.add_argument('--l2_emb', default=0.0, type=float)
+#     parser.add_argument('--device', default='cpu', type=str)
 
-    args = parser.parse_args()
-    base_model = SASRec(user_num=6040, item_num=3416, args=args)
-    lora_config = LoraConfig(
-        r=32,
-        lora_alpha=1,
-        target_modules=[
-            'attention_layers.0',
-            'attention_layers.1'
-        ],
-        bias="none"
-    )
-    lora_model = get_peft_model(base_model, lora_config)
-    lora_model.print_trainable_parameters()
+#     args = parser.parse_args()
+#     base_model = SASRec(user_num=6040, item_num=3416, args=args)
+#     lora_config = LoraConfig(
+#         r=32,
+#         lora_alpha=1,
+#         target_modules=[
+#             'attention_layers.0',
+#             'attention_layers.1'
+#         ],
+#         bias="none"
+#     )
+#     lora_model = get_peft_model(base_model, lora_config)
+#     lora_model.print_trainable_parameters()

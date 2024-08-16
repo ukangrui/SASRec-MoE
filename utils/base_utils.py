@@ -130,10 +130,7 @@ def evaluate(model, dataset, args):
     HT = 0.0
     valid_user = 0.0
 
-    if usernum>10000:
-        users = random.sample(range(1, usernum + 1), 10000)
-    else:
-        users = range(1, usernum + 1)
+    users = range(1, usernum + 1)
     for u in users:
 
         if len(train[u]) < 1 or len(test[u]) < 1: continue
@@ -165,9 +162,6 @@ def evaluate(model, dataset, args):
         if rank < 10:
             NDCG += 1 / np.log2(rank + 2)
             HT += 1
-        if valid_user % 100 == 0:
-            print('.', end="")
-            sys.stdout.flush()
 
     return NDCG / valid_user, HT / valid_user
 

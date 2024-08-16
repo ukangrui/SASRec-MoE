@@ -3,6 +3,9 @@ import json
 import numpy as np
 import random
 import copy
+from tqdm import tqdm
+import sys
+import os
 
 def load_dataset(data_dir):
     users = []
@@ -41,17 +44,18 @@ def split_by(df: pd.DataFrame, mode, num_groups = 100):
             user_groups.append(user_sorted[cut:cuts[index+1]])
     return user_groups
 
-def split_users(dataset , mode):
+def split_users(dataset , mode, num_groups):
     df = load_dataset(data_dir=f"data/{dataset}/dataset/{dataset}.txt")
-    user_groups = split_by(df, mode=mode)
+    user_groups = split_by(df, mode=mode, num_groups=num_groups)
     user_types = {}
     for index, user_group in enumerate(user_groups):
         for user in user_group:
             user_types[user] = "split_" + str(index+1)
     json_data = json.dumps(user_types)
-    with open(f'data/{dataset}/lora/{mode}/{mode}.json', 'w+') as json_file:
+    directory = f'data/{dataset}/lora/{mode}/num_groups={num_groups}/'
+    os.makedirs(directory, exist_ok=True)
+    with open(f'data/{dataset}/lora/{mode}/num_groups={num_groups}/{mode}.json', 'w+') as json_file:
         json_file.write(json_data)
-    print("Finished spliting User Groups:  "+ dataset + ' -- ' + mode)
 
 
 def evaluate_split(model, dataset, args, user_groups,  split = None):
@@ -162,15 +166,14 @@ def evaluate_user(model, dataset, args, test_user):
     return ndcg/valid_count, ht/valid_count
 
 
-def evaluate_ensemble(models:list, dataset, args, alpha, mode):
-
+def evaluate_ensemble(models:list, dataset, args, alpha = [0.5, 0.5]):
     ndcg = 0
     ht = 0
     valid_count = 0
     [train, valid, test, usernum, itemnum] = copy.deepcopy(dataset)
 
     users = range(1, usernum + 1)
-    for u in users:
+    for u in tqdm(users):
         if len(train[u]) < 1 or len(test[u]) < 1: 
             continue
         valid_count += 1
@@ -193,24 +196,18 @@ def evaluate_ensemble(models:list, dataset, args, alpha, mode):
                 item_idx.append(rand_item)
 
 
-        features = []
-        item_embeddings = []
+        ### Ensemble Feature
+        item_rank = {}
         for model in models:
-            final_feat, item_embeds = model.predict_helper(*[np.array(l) for l in [[u], [seq], item_idx]])
-            features.append(final_feat)
-            item_embeddings.append(item_embeds)
-        
-        if mode == 'MoE':
-            combined_log_feats = alpha * features[0] + (1-alpha) * features[1]
-            item_embedding = item_embeddings[0]
-            predictions = -item_embedding.matmul(combined_log_feats.unsqueeze(-1)).squeeze(-1)
-            predictions = predictions[0] # - for 1st argsort DESC
-        elif mode == 'Voting':
-            pass
-        else:
-            raise AssertionError
+            predictions = -model.predict(*[np.array(l) for l in [[u], [seq], item_idx]])
+            predictions = predictions[0].argsort()
+            for index, prediction in enumerate(predictions):
+                item_rank[prediction.item()] = item_rank.get(prediction.item(), []) + [index]
+        item_reranked = {key:sum(map(lambda x: x[0] * x[1], zip(alpha, value))) for key,value in item_rank.items()}
+        reranked_list = np.array(sorted(list(item_reranked.keys()), key= lambda x: item_rank[x]))
+        rank = reranked_list.argsort()[0].item()
+        ###
 
-        rank = predictions.argsort().argsort()[0].item()
         if rank < 10:
             ndcg += 1 / np.log2(rank + 2)
             ht += 1
@@ -240,3 +237,14 @@ def mark_only_gating_trainable(model):
 
 def dict2json(dict, dir):
     pass
+
+def print_trainable_parameters(model):
+    trainable_params = 0
+    all_param = 0
+    for _, param in model.named_parameters():
+        all_param += param.numel()
+        if param.requires_grad:
+            trainable_params += param.numel()
+    print(
+        f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
+    )
