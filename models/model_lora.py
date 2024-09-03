@@ -130,6 +130,13 @@ class SASRec(torch.nn.Module):
 
         return logits # preds # (U, I)
 
+    def predict_batch(self, user_ids, log_seqs, item_indices):
+        log_feats = self.log2feats(log_seqs)
+        final_feat = log_feats[:, -1, :]
+        item_embs = self.item_emb(torch.LongTensor(item_indices).to(self.dev))
+        logits =  torch.einsum('bi,bji->bj', final_feat, item_embs)
+        return logits
+
 
 # if __name__ == "__main__":
 #     parser = argparse.ArgumentParser()

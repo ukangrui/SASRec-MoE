@@ -4,6 +4,9 @@ import random
 import numpy as np
 from collections import defaultdict
 from multiprocessing import Process, Queue
+from tqdm import tqdm
+from peft import LoraConfig, get_peft_model, PeftModel
+import torch
 
 def build_index(dataset_name):
 
@@ -125,16 +128,12 @@ def data_partition(fname):
 # evaluate on test set
 def evaluate(model, dataset, args):
     [train, valid, test, usernum, itemnum] = copy.deepcopy(dataset)
-
     NDCG = 0.0
     HT = 0.0
     valid_user = 0.0
-
     users = range(1, usernum + 1)
-    for u in users:
-
+    for u in tqdm(users):
         if len(train[u]) < 1 or len(test[u]) < 1: continue
-
         seq = np.zeros([args.maxlen], dtype=np.int32)
         idx = args.maxlen - 1
         seq[idx] = valid[u][0]
@@ -151,20 +150,75 @@ def evaluate(model, dataset, args):
                 continue
             else:
                 item_idx.append(rand_item)
-
         predictions = -model.predict(*[np.array(l) for l in [[u], [seq], item_idx]])
         predictions = predictions[0] # - for 1st argsort DESC
-
         rank = predictions.argsort().argsort()[0].item()
-
         valid_user += 1
-
         if rank < 10:
             NDCG += 1 / np.log2(rank + 2)
             HT += 1
-
     return NDCG / valid_user, HT / valid_user
 
+def evaluate_batch(model, dataset, args, batch_size=10):
+    [train, valid, test, usernum, itemnum] = copy.deepcopy(dataset)
+    NDCG = 0.0
+    HT = 0.0
+    valid_user = 0.0
+    users = range(1, usernum + 1)
+    user_batch = []
+    seq_batch = []
+    item_idx_batch = []
+    mask = []
+    for u in users:
+        if len(train[u]) < 1 or len(test[u]) < 1:
+            continue
+        seq = np.zeros([args.maxlen], dtype=np.int32)
+        idx = args.maxlen - 1
+        seq[idx] = valid[u][0]
+        idx -= 1
+        for i in reversed(train[u]):
+            seq[idx] = i
+            idx -= 1
+            if idx == -1:
+                break
+        rated = set(train[u])
+        rated.add(0)
+        item_idx = [test[u][0]]
+        for rand_item in range(1, itemnum + 1):
+            if rand_item in rated:
+                continue
+            else:
+                item_idx.append(rand_item)
+        num_padding = itemnum - len(item_idx)
+        item_idx += [0] * num_padding ### itemidx 0 for padding
+        user_batch.append(u)
+        seq_batch.append(seq)
+        item_idx_batch.append(item_idx)
+        mask.append(itemnum - num_padding)
+        if len(user_batch) == batch_size:
+            with torch.no_grad():
+                predictions = -model.predict_batch(np.array(user_batch), np.array(seq_batch), np.array(item_idx_batch))
+            for (pred,start_idx) in zip(predictions, mask):
+                rank = pred[:start_idx].argsort().argsort()[0].item()
+                valid_user += 1
+                if rank < 10:
+                    NDCG += 1 / np.log2(rank + 2)
+                    HT += 1
+            user_batch = []
+            seq_batch = []
+            item_idx_batch = []
+            mask = []
+    # Process any remaining users in the last batch
+    if user_batch:
+        with torch.no_grad():
+            predictions = -model.predict_batch(np.array(user_batch), np.array(seq_batch), np.array(item_idx_batch))
+        for (pred,start_idx) in zip(predictions, mask):
+            rank = pred[:start_idx].argsort().argsort()[0].item()
+            valid_user += 1
+            if rank < 10:
+                NDCG += 1 / np.log2(rank + 2)
+                HT += 1
+    return NDCG / valid_user, HT / valid_user
 
 # def evaluate_split(model, dataset, args, user_groups,  split = None):
 
@@ -331,3 +385,52 @@ def evaluate(model, dataset, args):
 #             ht += 1
 
 #     return ndcg/valid_count, ht/valid_count
+
+def evaluate_debug(basemodel,ckpts, dataset, args, usergroups):
+    [train, valid, test, usernum, itemnum] = copy.deepcopy(dataset)
+
+    NDCG = 0.0
+    HT = 0.0
+    valid_user = 0.0
+
+    # users = range(1, usernum + 1)
+    users = random.sample(range(1, usernum + 1),15000)
+    for u in tqdm(users):
+        ckpt = [i for i in ckpts if usergroups[str(u)] == i.split('/')[5]]
+        try:
+            assert len(ckpt) == 1
+        except:
+            print(ckpt)
+        model = PeftModel.from_pretrained(copy.deepcopy(basemodel), ckpt[0])
+
+        if len(train[u]) < 1 or len(test[u]) < 1: continue
+
+        seq = np.zeros([args.maxlen], dtype=np.int32)
+        idx = args.maxlen - 1
+        seq[idx] = valid[u][0]
+        idx -= 1
+        for i in reversed(train[u]):
+            seq[idx] = i
+            idx -= 1
+            if idx == -1: break
+        rated = set(train[u])
+        rated.add(0)
+        item_idx = [test[u][0]]
+        for rand_item in range(1, itemnum + 1):
+            if rand_item in rated:
+                continue
+            else:
+                item_idx.append(rand_item)
+
+        predictions = -model.predict(*[np.array(l) for l in [[u], [seq], item_idx]])
+        predictions = predictions[0] # - for 1st argsort DESC
+
+        rank = predictions.argsort().argsort()[0].item()
+
+        valid_user += 1
+
+        if rank < 10:
+            NDCG += 1 / np.log2(rank + 2)
+            HT += 1
+
+    return NDCG / valid_user, HT / valid_user

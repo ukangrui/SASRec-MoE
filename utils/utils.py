@@ -4,7 +4,7 @@ import numpy as np
 import random
 import copy
 from tqdm import tqdm
-import sys
+import torch
 import os
 
 def load_dataset(data_dir):
@@ -19,6 +19,8 @@ def load_dataset(data_dir):
     items = pd.Series(items)
     df = pd.DataFrame({'user': users, 'item': items})
     return df
+
+
 
 def split_by(df: pd.DataFrame, mode, num_groups = 100):
     num_users  = len(df['user'].unique())
@@ -56,6 +58,103 @@ def split_users(dataset , mode, num_groups):
     os.makedirs(directory, exist_ok=True)
     with open(f'data/{dataset}/lora/{mode}/num_groups={num_groups}/{mode}.json', 'w+') as json_file:
         json_file.write(json_data)
+    
+def contruct_split_emb_from_item(dataset, group_data):
+    df = load_dataset(data_dir=f"data/{dataset}/dataset/{dataset}.txt")
+    item_embs = torch.load(f'data/{dataset}/baseline/base.pth', map_location='cpu')['item_emb.weight']
+    df['split'] = [group_data[str(i)] for i in df['user']]
+    split_df = df.groupby('split')['item'].apply(list).reset_index()
+    split_embs = torch.zeros(len(df['split'].unique()), item_embs.shape[1])
+    for index, row in split_df.iterrows():
+        split_idx = int(str(row['split']).split('_')[1]) -1
+        split_emb = torch.stack([item_embs[int(i)] for i in row['item']]).mean(0)
+        split_embs[split_idx] = split_emb
+    return torch.nn.Embedding.from_pretrained(split_embs).to(torch.device('cuda'))
+
+
+# def evaluate_split(model, dataset, args, user_groups,  split = None, batch_size = 64):
+#     alltypes = sorted(np.unique(np.array(list(user_groups.values()))).tolist(), key=lambda x: int(x.split('_')[1])) ### usersplit group ### usersplit group
+#     ndcg = dict(zip(alltypes,np.zeros(len(alltypes))))
+#     ht = dict(zip(alltypes,np.zeros(len(alltypes))))
+#     valid_count = dict(zip(alltypes,np.zeros(len(alltypes))))
+#     [train, valid, test, usernum, itemnum] = copy.deepcopy(dataset)
+#     # users = random.sample(range(1, usernum + 1), 30000)
+
+#     ### add batch feature
+#     user_batch = []
+#     seq_batch = []
+#     item_idx_batch = []
+#     mask = []
+#     ###
+
+#     users = range(1, usernum + 1)
+#     for u in users:
+#         usertype = user_groups[str(u)]
+#         if split != None and usertype != split:
+#             continue
+#         if len(train[u]) < 1 or len(test[u]) < 1: 
+#             continue
+#         valid_count[usertype] += 1
+#         seq = np.zeros([args.maxlen], dtype=np.int32) ### max len
+#         idx = args.maxlen - 1
+#         seq[idx] = valid[u][0]
+#         idx -= 1
+#         for i in reversed(train[u]):
+#             seq[idx] = i
+#             idx -= 1
+#             if idx == -1: break
+#         rated = set(train[u])
+#         rated.add(0)
+#         item_idx = [test[u][0]] ### true label
+
+#         for rand_item in range(1, itemnum + 1):
+#             if rand_item in rated:
+#                 continue
+#             else:
+#                 item_idx.append(rand_item)
+
+#         ### add batch feature
+#         num_padding = itemnum - len(item_idx)
+#         item_idx += [0] * num_padding ### itemidx 0 for padding
+#         user_batch.append(u)
+#         seq_batch.append(seq)
+#         item_idx_batch.append(item_idx)
+#         mask.append(itemnum - num_padding)
+
+#         if len(user_batch) == batch_size:
+#             with torch.no_grad():
+#                 predictions = -model.predict_batch(np.array(user_batch), np.array(seq_batch), np.array(item_idx_batch))
+#             for (pred,start_idx) in zip(predictions, mask):
+#                 rank = pred[:start_idx].argsort().argsort()[0].item()
+#                 if rank < 10:
+#                     ndcg[usertype] += 1 / np.log2(rank + 2)
+#                     ht[usertype] += 1
+        
+#             user_batch = []
+#             seq_batch = []
+#             item_idx_batch = []
+#             mask = []
+        
+#     if user_batch:
+#         with torch.no_grad():
+#             predictions = -model.predict_batch(np.array(user_batch), np.array(seq_batch), np.array(item_idx_batch))
+#         for (pred,start_idx) in zip(predictions, mask):
+#             rank = pred[:start_idx].argsort().argsort()[0].item()
+#             if rank < 10:
+#                 ndcg[usertype] += 1 / np.log2(rank + 2)
+#                 ht[usertype] += 1
+#         ### add batch feature
+
+#     if split == None:
+#         ndcg_all = dict()
+#         ht_all = dict()
+#         for i in alltypes:
+#             ndcg_all[i] = ndcg[i] / valid_count[i]
+#             ht_all[i] = ht[i] / valid_count[i]
+        
+#         return ndcg_all, ht_all
+#     else:
+#         return ndcg[split]/valid_count[split], ht[split]/valid_count[split]
 
 
 def evaluate_split(model, dataset, args, user_groups,  split = None):
@@ -65,7 +164,7 @@ def evaluate_split(model, dataset, args, user_groups,  split = None):
     ht = dict(zip(alltypes,np.zeros(len(alltypes))))
     valid_count = dict(zip(alltypes,np.zeros(len(alltypes))))
     [train, valid, test, usernum, itemnum] = copy.deepcopy(dataset)
-
+    # users = random.sample(range(1, usernum + 1), 30000)
     users = range(1, usernum + 1)
     for u in users:
         usertype = user_groups[str(u)]
@@ -217,9 +316,9 @@ def clear_lora_cache():
     pass
 
 
-def mark_only_gating_trainable(model):
+def mark_only_router_trainable(model):
         for name, param in model.named_parameters():
-            if "gate" in name:
+            if "router" in name:
                 param.requires_grad = True
             else:
                 param.requires_grad = False

@@ -1,0 +1,8 @@
+2024-08-21 12:40:02,027 - INFO - lora_rank: 1, lora_alpha: 64, lora_lr: 0.0005, modules: ['attention_layers.0', 'attention_layers.1'], num groups: 10
+2024-08-21 12:40:08,946 - INFO - base model ndcg: 0.10812802472545699, ht: 0.23427152317880795
+2024-08-21 12:40:12,615 - INFO - training lora on popularity
+2024-08-21 12:41:05,119 - INFO - base ndcg: 0.10375013822769871, ht: 0.22417218543046355
+2024-08-21 12:41:05,119 - INFO - lora ndcg: 0.10629916971199609, ht: 0.22880794701986754
+2024-08-21 12:41:05,184 - INFO - training lora on temprature
+2024-08-21 12:41:56,947 - INFO - base ndcg: 0.10387390743288465, ht: 0.22466887417218545
+2024-08-21 12:41:56,947 - INFO - lora ndcg: 0.10561734604933437, ht: 0.22615894039735102

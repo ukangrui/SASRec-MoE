@@ -1,0 +1,3 @@
+2024-09-03 08:20:07,713 - INFO - lora_rank: 1, lora_alpha: 64, lora_lr: 0.0005, modules: ['attention_layers.0', 'attention_layers.1'], num groups: 20
+2024-09-03 08:20:19,981 - INFO - base model ndcg: 0.09912922091274717, ht: 0.22698675496688742
+2024-09-03 08:20:22,871 - INFO - training lora on popularity

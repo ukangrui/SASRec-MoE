@@ -1,47 +1,35 @@
-baseline:
-  batch_size: 1024
-  lr: 1e-3
-  maxlen: 200
-  hidden_units: 50
-  num_blocks: 2
-  num_epochs: 25
-  num_heads: 1
-  dropout_rate: 0.2
-  l2_emb: 0.0
-  device: cuda
+device: 'cuda'
+hidden_units: 64
+num_blocks: 2
+num_heads: 4
+dropout_rate: 0.2
+maxlen: 200
+batch_size: 512
+use_conv: False
+metrics:
+    - popularity
+    - temprature
+num_groups: 32
+skip_threshold: 0.18
 
 lora:
-  batch_size: 1024
-  lr: 1e-3
-  maxlen: 200
-  hidden_units: 50
-  num_blocks: 2
-  num_epochs: 25
-  num_heads: 1
-  dropout_rate: 0.2
-  l2_emb: 0.0
-  device: cuda
+  num_epochs: 16
+  lr: 5e-4
+  weight_decay: 1e-2
+  lora_rank : 64
+  lora_alpha: 8
+  target_modules:
+    - attention_layers.0
+    - attention_layers.1
 
 moe:
-  batch_size: 1024
+  num_epochs: 16
   lr: 1e-3
-  maxlen: 200
-  hidden_units: 50
-  num_blocks: 2
-  num_epochs: 25
-  num_heads: 1
-  dropout_rate: 0.2
-  l2_emb: 0.0
-  device: cuda
+  weight_decay: 1e-2
+  gate_linear_config : 12800
 
 ensemble:
-  batch_size: 1024
-  lr: 1e-3
+  alpha:
+    - 0.9
+    - 0.1
   maxlen: 200
-  hidden_units: 50
-  num_blocks: 2
-  num_epochs: 25
-  num_heads: 1
-  dropout_rate: 0.2
-  l2_emb: 0.0
-  device: cuda

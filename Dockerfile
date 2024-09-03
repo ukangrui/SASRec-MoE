@@ -11,6 +11,7 @@ RUN apt-get update && \
         curl \
         && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y git
 RUN pip install accelerate==0.32.1
 RUN pip install hydra-core==1.3.2
 RUN pip install numpy==1.26.4
