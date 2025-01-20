@@ -1,0 +1,9 @@
+lora:
+  num_epochs: 10
+  lr: 1e-3
+  weight_decay: 0
+  lora_rank : 1
+  lora_alpha: 64
+  target_modules:
+    - attention_layers.0
+    - attention_layers.1

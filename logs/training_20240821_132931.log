@@ -1,5 +1,0 @@
-2024-08-21 13:29:31,316 - INFO - lora_rank: 1, lora_alpha: 64, lora_lr: 0.0005, modules: ['attention_layers.0', 'attention_layers.1'], num groups: 10
-2024-08-21 13:29:38,330 - INFO - base model ndcg: 0.10812802472545699, ht: 0.23427152317880795
-2024-08-21 13:29:38,330 - INFO - training MoE on popularity
-2024-08-21 13:29:47,367 - INFO - MoE Hard ndcg: 0.11087944645677159, ht: 0.23824503311258277
-2024-08-21 13:30:45,244 - INFO - MoE Soft ndcg: 0.08802856844488367, ht: 0.17235099337748344

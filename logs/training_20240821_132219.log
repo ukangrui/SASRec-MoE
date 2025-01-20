@@ -1,5 +1,0 @@
-2024-08-21 13:22:19,742 - INFO - lora_rank: 1, lora_alpha: 64, lora_lr: 0.0005, modules: ['attention_layers.0', 'attention_layers.1'], num groups: 10
-2024-08-21 13:22:26,740 - INFO - base model ndcg: 0.10812802472545699, ht: 0.23427152317880795
-2024-08-21 13:22:29,616 - INFO - training lora on popularity
-2024-08-21 13:24:52,393 - INFO - base ndcg: 0.10812802472545728, ht: 0.2342715231788079
-2024-08-21 13:24:52,393 - INFO - lora ndcg: 0.11087944645677181, ht: 0.23824503311258277

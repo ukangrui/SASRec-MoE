@@ -1,3 +1,0 @@
-2024-08-18 17:50:24,441 - INFO - lora_rank: 1, lora_alpha: 64, lora_lr: 0.0005, modules: ['attention_layers.0', 'attention_layers.1'], num groups: 10
-2024-08-18 17:50:26,012 - INFO - Ensembling with alpha = [0.5, 0.5]
-2024-08-18 18:05:50,217 - INFO - Ensemble ndcg: 0.11021823502680733, ht: 0.2370860927152318

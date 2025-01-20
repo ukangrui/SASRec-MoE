@@ -1,9 +1,0 @@
-2024-08-18 17:33:36,944 - INFO - lora_rank: 1, lora_alpha: 64, lora_lr: 0.0005, modules: ['attention_layers.0', 'attention_layers.1'], num groups: 10
-2024-08-18 17:33:51,983 - INFO - base model ndcg: 0.10812802472545699, ht: 0.23427152317880795
-2024-08-18 17:33:52,783 - INFO - training lora on temprature
-2024-08-18 17:36:14,534 - INFO - base ndcg: 0.10812802472545728, ht: 0.23427152317880795
-2024-08-18 17:36:14,534 - INFO - lora ndcg: 0.11046791750953544, ht: 0.23874172185430464
-2024-08-18 17:36:14,606 - INFO - training MoE on temprature
-2024-08-18 17:37:03,964 - INFO - MoE Hard ndcg: 0.11046791750953518, ht: 0.23874172185430464
-2024-08-18 17:41:40,352 - INFO - MoE Soft ndcg: 0.10869569607393137, ht: 0.2347682119205298
-2024-08-18 17:41:40,352 - INFO - Ensembling with alpha = [0.9, 0.1]
