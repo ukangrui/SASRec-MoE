@@ -19,12 +19,12 @@ class PointWiseFeedForward(torch.nn.Module):
         return outputs
     
 class SASRec(torch.nn.Module):
-    def __init__(self, user_num, item_num, hidden_units, maxlen, num_blocks, num_heads, dropout_rate):
+    def __init__(self, user_num, item_num, hidden_units, maxlen, num_blocks, num_heads, dropout_rate, device):
         super(SASRec, self).__init__()
 
         self.user_num = user_num
         self.item_num = item_num
-        self.dev = torch.device('cuda')
+        self.dev = torch.device(device)
         self.item_emb = torch.nn.Embedding(self.item_num+1, hidden_units, padding_idx=0)
         self.pos_emb = torch.nn.Embedding(maxlen+1, hidden_units, padding_idx=0)
         self.emb_dropout = torch.nn.Dropout(p=dropout_rate)
