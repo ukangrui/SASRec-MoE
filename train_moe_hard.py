@@ -26,9 +26,9 @@ args = parser.parse_args()
 print(args.grouping_metric)
 
 num_u, num_i = get_usr_itm_num(args.dataset)
-# train, test = load_train_test_data_num(load_txt_file(args.dataset), num_i, max_len = args.max_len, num_test=args.num_holdout)
-train = pickle.load(open("data/train_holdout4.pkl", "rb"))
-test = pickle.load(open("data/test_holdout4.pkl", "rb"))
+train, test = load_train_test_data_num(load_txt_file(args.dataset), num_i, max_len = args.max_len, num_test=args.num_holdout)
+# train = pickle.load(open("data/train_holdout4.pkl", "rb"))
+# test = pickle.load(open("data/test_holdout4.pkl", "rb"))
 
 with open(f'config/{args.grouping_metric}.json') as f:
     split_file = json.load(f)
