@@ -28,21 +28,19 @@ train, test = load_train_test_data_num(load_txt_file(args.dataset), num_i, max_l
 
 train_loader = DataLoader(train, batch_size = 256, shuffle = True, collate_fn = collate_train)
 test_loader  = DataLoader(test, batch_size = 256, shuffle = False, collate_fn = collate_test)
-train_loader = DataLoader(train, batch_size = 256, shuffle = True, collate_fn = collate_train)
-test_loader  = DataLoader(test, batch_size = 256, shuffle = False, collate_fn = collate_test)
 
 model = SASRec(user_num = num_u, item_num = num_i, maxlen = 200, num_blocks = 2, num_heads = 1, hidden_units = 50, dropout_rate = 0.2, device = args.device)
 model.load_state_dict(torch.load(f'checkpoints/{args.dataset}-base.pth', map_location=torch.device(args.device)))
 model = model.to(args.device)
 criterion = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=1e-5, weight_decay=1e-4)
-# for epoch in range(10):
-#     running_loss = 0.0
-#     model.train()
-#     for train_batch in train_loader:
-#         u, seq, pos, neg = train_batch
-#         running_loss += train_step(model, u, seq, pos, neg, criterion, optimizer, args.device)
-#     print('Epoch', epoch, 'Loss', round(running_loss/len(train),4), end=' ')
+for epoch in range(10):
+    running_loss = 0.0
+    model.train()
+    for train_batch in train_loader:
+        u, seq, pos, neg = train_batch
+        running_loss += train_step(model, u, seq, pos, neg, criterion, optimizer, args.device)
+    print('Epoch', epoch, 'Loss', round(running_loss/len(train),4), end=' ')
     
 
 model.eval()
@@ -58,5 +56,5 @@ ht /= len(test)
 print(f'test ndcg: {ndcg}, ht: { ht}')
 
 
-# torch.save(model.state_dict(), f'checkpoints/{args.dataset}-base{ht}.pth')
+torch.save(model.state_dict(), f'checkpoints/{args.dataset}-base{ht}.pth')
 
